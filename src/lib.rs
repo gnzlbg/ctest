@@ -63,6 +63,7 @@ pub struct TestGenerator {
     field_name: Box<Fn(&str, &str) -> String>,
     type_name: Box<Fn(&str, bool) -> String>,
     fn_cname: Box<Fn(&str, Option<&str>) -> String>,
+    err_on_warnings: bool,
 }
 
 struct StructFinder {
@@ -109,6 +110,7 @@ impl TestGenerator {
             type_name: Box::new(|f, is_struct| {
                 if is_struct {format!("struct {}", f)} else {f.to_string()}
             }),
+            err_on_warnings: true,
         }
     }
 
@@ -525,6 +527,15 @@ impl TestGenerator {
         self
     }
 
+    /// Controls whether warnings are considered errors.
+    ///
+    /// Defaults to true
+    pub fn err_on_warnings(&mut self, err: bool) -> &mut TestGenerator
+    {
+        self.err_on_warnings = err;
+        self
+    }
+
     /// Generate all tests.
     ///
     /// This function is first given the path to the `*-sys` crate which is
@@ -570,9 +581,12 @@ impl TestGenerator {
                .flag("/wd4668")  // using an undefined thing in preprocessor?
                 ;
         } else {
-            cfg.flag("-Wall").flag("-Wextra").flag("-Werror")
+            cfg.flag("-Wall").flag("-Wextra")
                .flag("-Wno-unused-parameter")
                .flag("-Wno-type-limits");
+            if self.err_on_warnings {
+                cfg.flag("-Werror");
+            }
         }
 
         for flag in self.flags.iter() {
