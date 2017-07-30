@@ -1317,6 +1317,9 @@ impl<'a> Generator<'a> {
             ast::FunctionRetTy::Default(..) => "void".to_string(),
             ast::FunctionRetTy::Ty(ref t) => {
                 match t.node {
+                    ast::TyKind::Never => {
+                        "void".to_string()
+                    }
                     ast::TyKind::Tup(ref t) if t.len() == 0 => {
                         "void".to_string()
                     }
