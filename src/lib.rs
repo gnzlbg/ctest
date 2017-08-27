@@ -1331,10 +1331,25 @@ impl<'a> Generator<'a> {
     }
 
     fn emit_run_all(&mut self) {
+        const N: usize = 1000;
+        let mut n = 0;
+        let mut tests = self.tests.clone();
+        while tests.len() > N {
+            let name = format!("run_group{}", n);
+            n += 1;
+            t!(writeln!(self.rust, "
+                fn {}() {{
+            ", name));
+            for test in tests.drain(..1000) {
+                t!(writeln!(self.rust, "{}();", test));
+            }
+            t!(writeln!(self.rust, "}}"));
+            tests.push(name);
+        }
         t!(writeln!(self.rust, "
             fn run_all() {{
         "));
-        for test in self.tests.iter() {
+        for test in tests.iter() {
             t!(writeln!(self.rust, "{}();", test));
         }
         t!(writeln!(self.rust, "
