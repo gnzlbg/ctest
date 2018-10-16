@@ -76,3 +76,9 @@ int32_t T1_arr4[2][3];
 int32_t T1_arr5[1][2][3];
 
 int32_t T1_arr42[1][2][3];
+
+struct Q {
+  uint8_t* q0;
+  uint8_t** q1;
+  uint8_t q2;
+};
