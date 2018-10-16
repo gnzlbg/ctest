@@ -11,7 +11,7 @@ script:
   - cargo test --manifest-path testcrate/Cargo.toml
   - cargo doc --no-deps
   - git clone https://github.com/rust-lang/libc
-  - sed -i '' 's@ctest = "0.2.2"@ctest = { path = "../.." }@g' libc/libc-test/Cargo.toml
+  - sed -i 's@ctest = "0.2.2"@ctest = { path = "../.." }@g' libc/libc-test/Cargo.toml
   - cd libc/libc-test
   - cargo test
 
