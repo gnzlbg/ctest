@@ -66,3 +66,7 @@ uint32_t (*(*T1_fn_ptr_s)(uint8_t))(uint16_t);
 // uint8_t -> uint8_t, and returning a function pointer to a function taking a
 // uint16_t and returning a uint32_t
 uint32_t (*(*T1_fn_ptr_s2)(uint8_t(*)(uint8_t), uint16_t(*)(uint16_t)))(uint16_t);
+
+struct libgit2 {
+  const int32_t id;
+};
