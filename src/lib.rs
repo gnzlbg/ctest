@@ -1406,7 +1406,7 @@ impl<'a> Generator<'a> {
                     }
                 }
             }
-            _ => format!("{}* {}", self.ty2name(ty, false), sig)
+            _ => format!("const {}* {}", self.ty2name(ty, false), sig)
         }
     }
 

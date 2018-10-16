@@ -89,3 +89,8 @@ extern "C" {
     pub static T1_fn_ptr_s2: unsafe extern "C" fn(extern fn(u8)->u8,
                                                   extern fn(u16)->u16) -> extern fn(u16)->u32;
 }
+
+#[repr(C)]
+pub struct libgit2 {
+    pub id: i32,
+}
