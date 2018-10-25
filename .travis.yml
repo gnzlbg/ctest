@@ -5,14 +5,20 @@ language: rust
 matrix:
   fast_finish: true
   include:
+    # Linux 
     - name: "stable"
       rust: stable
     - name: "beta"
       rust: beta
     - name: "nightly"
       rust: nightly
-      after_success:
-        - travis-cargo --only nightly doc-upload
+      after_success: travis-cargo --only nightly doc-upload
+
+    - name: "libc-test (linux)"
+      rust: nightly
+      script: ci/run-docker.sh x86_64-unknown-linux-gnu
+
+    # MacOS X
     - name: "libc-test (osx)"
       rust: nightly
       os: osx
@@ -25,9 +31,27 @@ matrix:
         - |
           export TARGET=x86_64-apple-darwin
           sh ci/run.sh $TARGET
-    - name: "libc-test (linux)"
-      rust: nightly
-      script: ci/run-docker.sh x86_64-unknown-linux-gnu
+
+    # Windows
+    - name: "x86_64-pc-windows-gnu"
+      env: TARGET=x86_64-pc-windows-gnu
+      os: windows
+      script: cargo test --all --target=${TARGET}
+    - name: "i686-pc-windows-gnu"
+      env: TARGET=i686-pc-windows-gnu PATH=$PATH:/c/Program\ Files\ (x86)/Rust/bin:/c/msys64/mingw32/bin
+      os: windows
+      script: cargo test --all --target=${TARGET}
+    - name: "x86_64-pc-windows-msvc"
+      env: TARGET=x86_64-pc-windows-msvc
+      install: true
+      os: windows
+      script: cargo test --all --target=${TARGET}
+    - name: "i686-pc-windows-msvc"
+      env: TARGET=i686-pc-windows-msvc
+      os: windows
+      script: cargo test --all --target=${TARGET}
+
+    # Tooling
     - name: "rustfmt"
       install: true
       rust: nightly
@@ -38,6 +62,8 @@ matrix:
       rust: nightly
       before_script: rustup component add clippy-preview
       script: cargo clippy -- -D clippy::pedantic
+
+install: rustup target add ${TARGET} 
 
 script:
   - cargo test
