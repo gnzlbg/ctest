@@ -1,7 +1,6 @@
 # ctest
 
 [![Build Status](https://travis-ci.org/alexcrichton/ctest.svg?branch=master)](https://travis-ci.org/alexcrichton/ctest)
-[![Build status](https://ci.appveyor.com/api/projects/status/akjf8gn5pem05iyw?svg=true)](https://ci.appveyor.com/project/alexcrichton/ctest)
 
 [Documentation][dox]
 
