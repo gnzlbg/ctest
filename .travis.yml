@@ -6,31 +6,29 @@ matrix:
   fast_finish: true
   include:
     # Linux 
-    - name: "stable"
+    - name: "x86_64-unknown-linux-gnu (stable)"
       rust: stable
       env: TARGET=x86_64-unknown-linux-gnu
       install: true
-    - name: "beta"
+      script: ci/run-docker.sh ${TARGET}
+    - name: "x86_64-unknown-linux-gnu (beta)"
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
       install: true
-    - name: "nightly"
-      rust: nightly
-      env: TARGET=x86_64-unknown-linux-gnu
-      after_success: travis-cargo --only nightly doc-upload
-      install: true
-    - name: "libc-test (linux)"
+      script: ci/run-docker.sh ${TARGET}
+    - name: "x86_64-unknown-linux-gnu (nightly)"
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu
       script: ci/run-docker.sh ${TARGET}
+      after_success: travis-cargo --only nightly doc-upload
       install: true
 
     # MacOS X
-    - name: "libc-test (osx)"
+    - name: "x86_64-apple-darwin (nightly)"
       rust: nightly
       env: TARGET=x86_64-apple-darwin
       os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10
       install: true
 
     # Windows

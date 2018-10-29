@@ -24,7 +24,12 @@ case ${TARGET} in
         sed -i '' 's@ctest = "0.2.3"@ctest = { path = "../.." }@g' \
             libc/libc-test/Cargo.toml
         ;;
+    *windows*)
+        sed -i 's@ctest = "0.2.3"@ctest = { path = "../../.." }@g' \
+            target/libc/libc-test/Cargo.toml
+        ;;
     *)
+        exit 1
         ;;
 esac
 
