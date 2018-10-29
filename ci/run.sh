@@ -22,7 +22,7 @@ case ${TARGET} in
         ;;
     *apple*)
         sed -i '' 's@ctest = "0.2.3"@ctest = { path = "../.." }@g' \
-            libc/libc-test/Cargo.toml
+            target/libc/libc-test/Cargo.toml
         ;;
     *windows*)
         sed -i 's@ctest = "0.2.3"@ctest = { path = "../../.." }@g' \
