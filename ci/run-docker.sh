@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Small script to run tests for a target (or all targets) inside all the
 # respective docker images.
 

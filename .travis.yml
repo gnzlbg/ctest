@@ -8,48 +8,45 @@ matrix:
     # Linux 
     - name: "stable"
       rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu
+      install: true
     - name: "beta"
       rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
+      install: true
     - name: "nightly"
       rust: nightly
+      env: TARGET=x86_64-unknown-linux-gnu
       after_success: travis-cargo --only nightly doc-upload
-
+      install: true
     - name: "libc-test (linux)"
       rust: nightly
-      script: ci/run-docker.sh x86_64-unknown-linux-gnu
+      env: TARGET=x86_64-unknown-linux-gnu
+      script: ci/run-docker.sh ${TARGET}
+      install: true
 
     # MacOS X
     - name: "libc-test (osx)"
       rust: nightly
+      env: TARGET=x86_64-apple-darwin
       os: osx
       osx_image: xcode9.4
-      after_script:
-        - git clone https://github.com/rust-lang/libc
-        - sed -i '' 's@ctest = "0.2.3"@ctest = { path = "../.." }@g' libc/libc-test/Cargo.toml
-        - cd libc
-        - cargo generate-lockfile --manifest-path libc-test/Cargo.toml
-        - |
-          export TARGET=x86_64-apple-darwin
-          sh ci/run.sh $TARGET
+      install: true
 
     # Windows
     - name: "x86_64-pc-windows-gnu"
       env: TARGET=x86_64-pc-windows-gnu
       os: windows
-      script: cargo test --all --target=${TARGET}
     - name: "i686-pc-windows-gnu"
       env: TARGET=i686-pc-windows-gnu PATH=$PATH:/c/Program\ Files\ (x86)/Rust/bin:/c/msys64/mingw32/bin
       os: windows
-      script: cargo test --all --target=${TARGET}
     - name: "x86_64-pc-windows-msvc"
       env: TARGET=x86_64-pc-windows-msvc
       install: true
       os: windows
-      script: cargo test --all --target=${TARGET}
     - name: "i686-pc-windows-msvc"
       env: TARGET=i686-pc-windows-msvc
       os: windows
-      script: cargo test --all --target=${TARGET}
 
     # Tooling
     - name: "rustfmt"
@@ -64,11 +61,7 @@ matrix:
       script: cargo clippy -- -D clippy::pedantic
 
 install: rustup target add ${TARGET} 
-
-script:
-  - cargo test
-  - cargo test --manifest-path testcrate/Cargo.toml
-  - cargo doc --no-deps
+script: ci/run.sh
 
 notifications:
   email:
