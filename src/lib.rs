@@ -824,6 +824,7 @@ impl TestGenerator {
             br#"
             use std::any::{Any, TypeId};
             use std::mem;
+            #[allow(deprecated)]
             use std::sync::atomic::{ATOMIC_BOOL_INIT, ATOMIC_USIZE_INIT};
             use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
@@ -861,7 +862,9 @@ impl TestGenerator {
             }
             p! { i8 i16 i32 i64 u8 u16 u32 u64 usize isize }
 
+            #[allow(deprecated)]
             static FAILED: AtomicBool = ATOMIC_BOOL_INIT;
+            #[allow(deprecated)]
             static NTESTS: AtomicUsize = ATOMIC_USIZE_INIT;
 
             fn same<T: Eq + Pretty>(rust: T, c: T, attr: &str) {
@@ -977,6 +980,8 @@ fn default_cfg(target: &str) -> Vec<(String, Option<String>)> {
         ("solaris", "unix", "")
     } else if target.contains("emscripten") {
         ("emscripten", "unix", "")
+    } else if target.contains("wasi") {
+        ("unknown", "", "wasi")
     } else {
         panic!("unknown os/family width: {}", target)
     };
