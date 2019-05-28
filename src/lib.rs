@@ -1115,7 +1115,7 @@ fn linkage(lang: &Lang) -> &'static str {
 impl<'a> Generator<'a> {
     fn rust2c_test(&self, ty: &str) -> bool {
         let rustc_types = [
-            "usize", "u8", "u16", "u32", "u64", "isize", "i8", "i16", "i32", "i64",
+            "usize", "u8", "u16", "u32", "u64", "isize", "i8", "i16", "i32", "i64", "f32", "f64",
         ];
         ty.starts_with("c_") || rustc_types.contains(&ty)
     }
@@ -1153,6 +1153,8 @@ impl<'a> Generator<'a> {
             "i16" => "int16_t".to_string(),
             "i32" => "int32_t".to_string(),
             "i64" => "int64_t".to_string(),
+            "f32" => "float".to_string(),
+            "f64" => "double".to_string(),
             "( )" => "void".to_string(),
             s => (self.opts.type_name)(s, self.structs.contains(s), self.unions.contains(s)),
         }

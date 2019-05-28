@@ -20,6 +20,9 @@ void T1s(const Arr a) {}
 void T1t(Arr* a) {}
 void T1v(const Arr* a) {}
 
+void T1sf(float f) {}
+void T1df(double d) {}
+
 unsigned T1static = 3;
 
 const uint8_t T1_static_u8 = 42;
