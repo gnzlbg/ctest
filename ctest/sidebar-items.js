@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Lang","Programming language"],["VolatileItemKind","A kind of item to which the C volatile qualifier could apply."]],"struct":[["TestGenerator","A builder used to generate a test suite."]]});
