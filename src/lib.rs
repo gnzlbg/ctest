@@ -1185,14 +1185,14 @@ impl<'a> Generator<'a> {
         (self.opts.field_name)(struct_, field)
     }
 
-    fn test_type(&mut self, name: &str, ty: &ast::Ty) {
+    fn test_type(&mut self, name: &str, ty: &ast::Ty, fn_ptr: bool) {
         if (self.opts.skip_type)(name) {
             if self.opts.verbose_skip {
                 eprintln!("skipping type \"{}\"", name);
             }
             return;
         }
-        let c = self.rust_ty_to_c_ty(name);
+        let c = self.rust_ty_to_c_ty(name, fn_ptr);
         self.test_size_align(name, &c);
         self.test_sign(name, &c, ty);
     }
@@ -1205,7 +1205,7 @@ impl<'a> Generator<'a> {
             return;
         }
 
-        let cty = self.rust_ty_to_c_ty(ty);
+        let cty = self.rust_ty_to_c_ty(ty, false);
         self.test_size_align(ty, &cty);
 
         self.tests.push(format!("field_offset_size_{}", ty));
@@ -1440,7 +1440,7 @@ impl<'a> Generator<'a> {
         self.tests.push(format!("sign_{}", rust));
     }
 
-    fn rust_ty_to_c_ty(&self, mut rust_ty: &str) -> String {
+    fn rust_ty_to_c_ty(&self, mut rust_ty: &str, fn_ptr: bool) -> String {
         if rust_ty == "&str" {
             return "char*".to_string();
         }
@@ -1453,6 +1453,9 @@ impl<'a> Generator<'a> {
                 cty = format!("{}*", cty);
                 rust_ty = &rust_ty[5..];
             }
+        }
+        if fn_ptr {
+            cty = format!("{}*", cty);
         }
         cty
     }
@@ -1469,7 +1472,7 @@ impl<'a> Generator<'a> {
 
         let c_name = (self.opts.const_cname)(name);
 
-        let cty = self.rust_ty_to_c_ty(rust_ty);
+        let cty = self.rust_ty_to_c_ty(rust_ty, false);
         t!(writeln!(
             self.c,
             r#"
@@ -1557,7 +1560,7 @@ impl<'a> Generator<'a> {
             args.iter()
                 .enumerate()
                 .map(|(idx, a)| {
-                    let mut arg = self.rust_ty_to_c_ty(a);
+                    let mut arg = self.rust_ty_to_c_ty(a, false);
                     if (self.opts.volatile_item)(VolatileItemKind::FunctionArg(
                         name.to_string(),
                         idx,
@@ -1594,7 +1597,7 @@ impl<'a> Generator<'a> {
                 .join(", ")
                 + if variadic { ", ..." } else { "" }
         };
-        let mut c_ret = self.rust_ty_to_c_ty(ret);
+        let mut c_ret = self.rust_ty_to_c_ty(ret, false);
         if (self.opts.volatile_item)(VolatileItemKind::FunctionRet(name.to_string())) {
             c_ret = format!("volatile {}", c_ret);
         }
@@ -1783,7 +1786,7 @@ impl<'a> Generator<'a> {
         self.tests.push(format!("static_{}", name));
     }
 
-    fn test_roundtrip(&mut self, rust: &str, ast: Option<&ast::VariantData>) {
+    fn test_roundtrip(&mut self, rust: &str, ast: Option<&ast::VariantData>, fn_ptr: bool) {
         if (self.opts.skip_struct)(rust) {
             if self.opts.verbose_skip {
                 eprintln!("skipping roundtrip (skip_struct) \"{}\"", rust);
@@ -1803,7 +1806,7 @@ impl<'a> Generator<'a> {
             return;
         }
 
-        let c = self.rust_ty_to_c_ty(rust);
+        let c = self.rust_ty_to_c_ty(rust, fn_ptr);
 
         // Generate a function that returns a vector for a type
         // that contains 1 if the byte is padding, and 0 if the byte is not
@@ -2272,9 +2275,13 @@ impl<'a, 'v> Visitor<'v> for Generator<'a> {
         let public = i.vis == ast::Visibility::Public;
         match i.node {
             ast::ItemKind::Ty(ref ty, ref generics) if public => {
+                let fn_ptr = match &ty.node {
+                    ast::TyKind::BareFn(_) => true,
+                    _ => false,
+                };
                 self.assert_no_generics(i.ident, generics);
-                self.test_type(&i.ident.to_string(), ty);
-                self.test_roundtrip(&i.ident.to_string(), None);
+                self.test_type(&i.ident.to_string(), ty, fn_ptr);
+                self.test_roundtrip(&i.ident.to_string(), None, fn_ptr);
             }
 
             ast::ItemKind::Struct(ref s, ref generics)
@@ -2291,7 +2298,7 @@ impl<'a, 'v> Visitor<'v> for Generator<'a> {
                     panic!("{} is not marked #[repr(C)]", i.ident);
                 }
                 self.test_struct(&i.ident.to_string(), s);
-                self.test_roundtrip(&i.ident.to_string(), Some(s));
+                self.test_roundtrip(&i.ident.to_string(), Some(s), false);
             }
 
             ast::ItemKind::Const(ref ty, _) if public => {
