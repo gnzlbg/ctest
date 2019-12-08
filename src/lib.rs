@@ -2271,11 +2271,14 @@ impl<'a, 'v> Visitor<'v> for Generator<'a> {
         let prev_abi = self.abi;
         let public = i.vis == ast::Visibility::Public;
         match i.node {
-            ast::ItemKind::Ty(ref ty, ref generics) if public => {
-                self.assert_no_generics(i.ident, generics);
-                self.test_type(&i.ident.to_string(), ty);
-                self.test_roundtrip(&i.ident.to_string(), None);
-            }
+            ast::ItemKind::Ty(ref ty, ref generics) if public => match &ty.node {
+                ast::TyKind::BareFn(_) => (),
+                _ => {
+                    self.assert_no_generics(i.ident, generics);
+                    self.test_type(&i.ident.to_string(), ty);
+                    self.test_roundtrip(&i.ident.to_string(), None);
+                }
+            },
 
             ast::ItemKind::Struct(ref s, ref generics)
             | ast::ItemKind::Union(ref s, ref generics)
