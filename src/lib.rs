@@ -1009,7 +1009,7 @@ impl TestGenerator {
                     }
                 )*)
             }
-            p! { i8 i16 i32 i64 u8 u16 u32 u64 usize isize }
+            p! { i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 usize isize }
 
             fn same<T: Eq + Pretty>(rust: T, c: T, attr: &str) {
                 if rust != c {
@@ -1138,7 +1138,7 @@ fn linkage(lang: &Lang) -> &'static str {
 impl<'a> Generator<'a> {
     fn rust2c_test(&self, ty: &str) -> bool {
         let rustc_types = [
-            "usize", "u8", "u16", "u32", "u64", "isize", "i8", "i16", "i32", "i64",
+            "usize", "u8", "u16", "u32", "u64", "u128", "isize", "i8", "i16", "i32", "i64", "i128",
         ];
         ty.starts_with("c_") || rustc_types.contains(&ty)
     }
@@ -1172,10 +1172,12 @@ impl<'a> Generator<'a> {
             "u16" => "uint16_t".to_string(),
             "u32" => "uint32_t".to_string(),
             "u64" => "uint64_t".to_string(),
+            "u128" => "__uint128_t".to_string(),
             "i8" => "int8_t".to_string(),
             "i16" => "int16_t".to_string(),
             "i32" => "int32_t".to_string(),
             "i64" => "int64_t".to_string(),
+            "i128" => "__int128_t".to_string(),
             "( )" => "void".to_string(),
             s => (self.opts.type_name)(s, self.structs.contains(s), self.unions.contains(s)),
         }
@@ -1388,8 +1390,8 @@ impl<'a> Generator<'a> {
                 }
                 match self.rust2c(&last).as_str() {
                     "char" | "short" | "int" | "long" | "long long" | "int8_t" | "int16_t"
-                    | "int32_t" | "int64_t" | "uint8_t" | "uint16_t" | "uint32_t" | "uint64_t"
-                    | "size_t" | "ssize_t" => true,
+                    | "int32_t" | "int64_t" | "int128_t" | "uint8_t" | "uint16_t"
+                    | "uint32_t" | "uint64_t" | "uint128_t" | "size_t" | "ssize_t" => true,
                     s => s.starts_with("signed ") || s.starts_with("unsigned "),
                 }
             }
