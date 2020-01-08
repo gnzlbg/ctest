@@ -1105,6 +1105,8 @@ fn default_cfg(target: &str) -> Vec<(String, Option<String>)> {
         ("dragonfly", "unix", "")
     } else if target.contains("solaris") {
         ("solaris", "unix", "")
+    } else if target.starts_with("wasm32") {
+        ("emscripten", "unix", "")
     } else if target.contains("emscripten") {
         ("emscripten", "unix", "")
     } else if target.contains("wasi") {
