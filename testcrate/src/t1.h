@@ -58,6 +58,9 @@ void T1s(const Arr a);
 void T1t(Arr* a);
 void T1v(const Arr* a);
 
+void T1sf(float);
+void T1df(double);
+
 #define T1C 4
 
 extern uint32_t T1static;
