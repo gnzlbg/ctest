@@ -498,6 +498,7 @@ impl TestGenerator {
     /// cfg.const_cname(|c| {
     ///     c.replace("FOO", "foo")
     /// });
+    /// ```
     pub fn const_cname<F>(&mut self, f: F) -> &mut Self
     where
         F: Fn(&str) -> String + 'static,
