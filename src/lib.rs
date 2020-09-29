@@ -1176,10 +1176,10 @@ impl<'a> Generator<'a> {
     fn rust2c(&self, ty: &str) -> String {
         match ty {
             t if t.starts_with("c_") => match &ty[2..].replace("long", " long")[..] {
-                s if s.starts_with('u') => format!("unsigned {}", &s[1..]),
+                s if s.starts_with('u') => format!("unsigned {}", &s[1..].trim()),
                 "short" => "short".to_string(),
-                s if s.starts_with('s') => format!("signed {}", &s[1..]),
-                s => s.to_string(),
+                s if s.starts_with('s') => format!("signed {}", &s[1..].trim()),
+                s => s.trim().to_string(),
             },
 
             "usize" => "size_t".to_string(),
