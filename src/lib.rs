@@ -110,6 +110,7 @@ pub struct TestGenerator {
     fn_cname: Box<Fn(&str, Option<&str>) -> String>,
     const_cname: Box<Fn(&str) -> String>,
     rust_version: rustc_version::Version,
+    abort_on_errors: bool,
 }
 
 struct TyFinder {
@@ -174,6 +175,7 @@ impl TestGenerator {
             }),
             const_cname: Box::new(std::string::ToString::to_string),
             rust_version: rustc_version::version().unwrap(),
+            abort_on_errors: false,
         }
     }
 
@@ -778,6 +780,15 @@ impl TestGenerator {
         self
     }
 
+    /// Fail if parsing / macro expansion had errors
+    ///
+    /// Without this macro expansion errors are ignore (and the macro invocation is
+    /// treated like it didn't exist).
+    pub fn abort_on_errors(&mut self) -> &mut Self {
+        self.abort_on_errors = true;
+        self
+    }
+
     /// Generate all tests.
     ///
     /// This function is first given the path to the `*-sys` crate which is
@@ -1033,6 +1044,10 @@ impl TestGenerator {
         // Walk the crate, emitting test cases for everything found
         visit::walk_crate(&mut gen, &krate);
         gen.emit_run_all();
+
+        if self.abort_on_errors {
+            sess.span_diagnostic.abort_if_errors();
+        }
 
         out_file
     }
