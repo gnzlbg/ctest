@@ -78,6 +78,33 @@ pub enum VolatileItemKind {
     __Other,
 }
 
+/// API item imported from C
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+enum ApiItem {
+    Function {
+        name: String,
+        return_type: String,
+        arguments: String,
+    },
+    Static {
+        name: String,
+        type_: String,
+    },
+}
+
+impl std::fmt::Display for ApiItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Function {
+                name,
+                return_type,
+                arguments,
+            } => write!(f, "{} {}({});", return_type, name, arguments),
+            Self::Static { name, type_ } => write!(f, "extern {} {};", type_, name),
+        }
+    }
+}
+
 /// A builder used to generate a test suite.
 ///
 /// This builder has a number of configuration options which modify how the
@@ -90,6 +117,7 @@ pub struct TestGenerator {
     flags: Vec<String>,
     target: Option<String>,
     out_dir: Option<PathBuf>,
+    out_items: Option<String>,
     defines: Vec<(String, Option<String>)>,
     cfg: Vec<(String, Option<String>)>,
     verbose_skip: bool,
@@ -110,6 +138,7 @@ pub struct TestGenerator {
     fn_cname: Box<Fn(&str, Option<&str>) -> String>,
     const_cname: Box<Fn(&str) -> String>,
     rust_version: rustc_version::Version,
+    abort_on_errors: bool,
 }
 
 struct TyFinder {
@@ -130,6 +159,7 @@ struct Generator<'a> {
     abi: Abi,
     tests: Vec<String>,
     sess: &'a ParseSess,
+    items: Vec<Box<ApiItem>>,
     opts: &'a TestGenerator,
 }
 
@@ -146,6 +176,7 @@ impl TestGenerator {
             flags: Vec::new(),
             target: None,
             out_dir: None,
+            out_items: None,
             defines: Vec::new(),
             cfg: Vec::new(),
             verbose_skip: false,
@@ -174,6 +205,7 @@ impl TestGenerator {
             }),
             const_cname: Box::new(std::string::ToString::to_string),
             rust_version: rustc_version::version().unwrap(),
+            abort_on_errors: false,
         }
     }
 
@@ -496,11 +528,33 @@ impl TestGenerator {
     /// cfg.const_cname(|c| {
     ///     c.replace("FOO", "foo")
     /// });
+    /// ```
     pub fn const_cname<F>(&mut self, f: F) -> &mut Self
     where
         F: Fn(&str) -> String + 'static,
     {
         self.const_cname = Box::new(f);
+        self
+    }
+
+    /// Store found API items in given file (prefixed by out_dir)
+    ///
+    /// The export should use C-like syntax and use deterministic order, but is
+    /// not guaranteed to be stable.  It is designed to give humans a quick list
+    /// and a way to track the changes.
+    ///
+    /// Right now only extern functions and ("static") variables are listed.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ctest::TestGenerator;
+    ///
+    /// let mut cfg = TestGenerator::new();
+    /// cfg.out_items("items.h");
+    /// ```
+    pub fn out_items(&mut self, filename: &str) -> &mut Self {
+        self.out_items = Some(filename.to_string());
         self
     }
 
@@ -778,6 +832,15 @@ impl TestGenerator {
         self
     }
 
+    /// Fail if parsing / macro expansion had errors
+    ///
+    /// Without this macro expansion errors are ignore (and the macro invocation is
+    /// treated like it didn't exist).
+    pub fn abort_on_errors(&mut self) -> &mut Self {
+        self.abort_on_errors = true;
+        self
+    }
+
     /// Generate all tests.
     ///
     /// This function is first given the path to the `*-sys` crate which is
@@ -949,6 +1012,7 @@ impl TestGenerator {
             tests: Vec::new(),
             files: HashSet::new(),
             sess: &sess,
+            items: Vec::new(),
             opts: self,
         };
         t!(writeln!(gen.c, "#include <stdio.h>"));
@@ -1033,6 +1097,19 @@ impl TestGenerator {
         // Walk the crate, emitting test cases for everything found
         visit::walk_crate(&mut gen, &krate);
         gen.emit_run_all();
+
+        if let Some(out_items) = &self.out_items {
+            let out_items = out_dir.join(out_items);
+            let mut items_out = BufWriter::new(t!(File::create(&out_items)));
+            gen.items.sort();
+            for i in &gen.items {
+                t!(writeln!(items_out, "{}", i));
+            }
+        }
+
+        if self.abort_on_errors {
+            sess.span_diagnostic.abort_if_errors();
+        }
 
         out_file
     }
@@ -1160,10 +1237,10 @@ impl<'a> Generator<'a> {
     fn rust2c(&self, ty: &str) -> String {
         match ty {
             t if t.starts_with("c_") => match &ty[2..].replace("long", " long")[..] {
-                s if s.starts_with('u') => format!("unsigned {}", &s[1..]),
+                s if s.starts_with('u') => format!("unsigned {}", &s[1..].trim()),
                 "short" => "short".to_string(),
-                s if s.starts_with('s') => format!("signed {}", &s[1..]),
-                s => s.to_string(),
+                s if s.starts_with('s') => format!("signed {}", &s[1..].trim()),
+                s => s.trim().to_string(),
             },
 
             "usize" => "size_t".to_string(),
@@ -1599,6 +1676,19 @@ impl<'a> Generator<'a> {
             c_ret = format!("volatile {}", c_ret);
         }
         let abi = self.abi2str(abi);
+
+        if self.opts.out_items.is_some() {
+            self.items.push(Box::new(ApiItem::Function {
+                name: name.to_string(),
+                return_type: if abi.is_empty() {
+                    ret.to_string()
+                } else {
+                    format!("{} {}", ret, abi)
+                },
+                arguments: args.to_string(),
+            }));
+        }
+
         t!(writeln!(
             self.c,
             r#"
@@ -1657,6 +1747,13 @@ impl<'a> Generator<'a> {
         }
 
         let c_name = c_name.unwrap_or_else(|| name.to_string());
+
+        if self.opts.out_items.is_some() {
+            self.items.push(Box::new(ApiItem::Static {
+                name: c_name.to_string(),
+                type_: c_ty.to_string(),
+            }));
+        }
 
         if rust_ty.contains("extern fn") {
             let sig = c_ty.replacen("(*)", &format!("(* __test_static_{}(void))", name), 1);
