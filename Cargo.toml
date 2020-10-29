@@ -17,7 +17,7 @@ Automated tests of FFI bindings.
 [dependencies]
 syntex_syntax2 = "0.0.2"
 cc = "1.0.1"
-rustc_version = "0.2"
+rustc_version = "0.3"
 
 [workspace]
 members = ["testcrate"]
